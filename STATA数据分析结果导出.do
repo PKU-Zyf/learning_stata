@@ -1,7 +1,7 @@
 /*
 STATA数据分析结果导出
 z.yf@pku.edu.cn
-最后更新：2020-12-13
+最后更新：2020-12-14
 */
 
 
@@ -141,9 +141,62 @@ asdoc pwcorr price headroom mpg displacement, sig label replace ///
 asdoc reg price mpg rep78, save($PATH/asdoc_tab_3.doc) label nest replace
 asdoc reg price mpg rep78 headroom, label nest append
 asdoc reg price mpg rep78 headroom weight, label nest append
+*/
 
 
-* 5. 图片的保存和导出
+* 5. sum2docx, corr2docx, reg2docx
+
+** sum2docx
+global PATH = "D:/PKU-Zyf/R&STATA/tabs"
+sysuse auto, clear
+
+sum2docx price-trunk ///
+using "$PATH/my_docx_1.docx", replace ///
+stats( ///
+    N mean(%9.2f) sd min(%9.0g) ///
+    median(%9.0g) max(%9.0g) ///
+) title("表1：描述统计")
+
+** corr2docx
+corr2docx mpg weight length rep78 if foreign == 1 ///
+using "$PATH/my_docx_2.docx", replace ///
+star(* 0.05 ** 0.01) ///
+title("表2：相关性分析") ///
+note("注：仅统计进口汽车。* p<0.05 ** p<0.01")
+
+** putdocx
+putdocx begin // 新建docx文件
+putdocx paragraph // 添加段落
+putdocx text ("表格汇总"), ///
+    font("楷体", 14, black) bold linebreak // 写入文字
+putdocx save "$PATH/表格汇总.docx", replace
+
+sum2docx price-trunk ///
+using "$PATH/表格汇总.docx", append ///
+stats( ///
+    N mean(%9.2f) sd min(%9.0g) ///
+    median(%9.0g) max(%9.0g) ///
+) title("表1：描述统计")
+
+corr2docx mpg weight length rep78 if foreign == 1 ///
+using "$PATH/表格汇总.docx", append ///
+star(* 0.05 ** 0.01) ///
+title("表2：相关性分析") ///
+note("注：仅统计进口汽车。* p<0.05 ** p<0.01")
+
+** reg2docx
+
+eststo A: quietly regress price weight mpg
+eststo B: quietly regress price weight mpg length
+eststo C: quietly regress price weight mpg length foreign
+reg2docx A B C using "$PATH/表格汇总.docx", append ///
+    b(%9.3f) t(%7.2f) scalars(N r2(%9.3f) r2_a(%9.2f)) ///
+    mtitles("模型1" "模型2" "模型3") ///
+    title("表3：回归分析")
+*/
+
+
+* 6. 图片的保存和导出
 
 clear
 global PATH = "D:/PKU-Zyf/R&STATA/graphs"
@@ -152,4 +205,3 @@ twoway (scatter price length) (lfit price length), name(my_graph, replace)
 graph save my_graph "$PATH/my_graph.gph"
 graph export "$PATH/my_graph.png", name(my_graph) as(png) replace
 */
-
